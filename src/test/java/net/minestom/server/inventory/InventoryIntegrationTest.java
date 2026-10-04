@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -339,5 +340,48 @@ public class InventoryIntegrationTest {
             assertEquals(player.getInventory().getSize(), event.getSlot());
             assertEquals(player.getInventory(), event.getInventory());
         });
+    }
+
+    @Test
+    public void furnaceShiftClickDoesNotInsertIntoOutputSlot(Env env) {
+        var instance = env.createFlatInstance();
+        var connection = env.createConnection();
+        var player = connection.connect(instance, new Pos(0, 42, 0));
+        for (var type : new InventoryType[]{
+                InventoryType.FURNACE,
+                InventoryType.BLAST_FURNACE,
+                InventoryType.SMOKER
+        }) {
+            var furnace = new Inventory(type, "Furnace");
+            furnace.setItemStack(0, ItemStack.of(Material.STONE));
+            furnace.setItemStack(1, ItemStack.of(Material.COAL));
+            var input = ItemStack.of(Material.DIAMOND, 4);
+            player.getInventory().setItemStack(0, input);
+
+            // A regular inventory shift would continue into slot 2. Furnace shifts must not.
+            furnace.shiftClick(player, furnace.getSize(), 0);
+
+            assertEquals(ItemStack.AIR, furnace.getItemStack(2), type.name());
+            assertEquals(input, player.getInventory().getItemStack(0), type.name());
+        }
+    }
+
+    @Test
+    public void furnaceFuelSlotShiftClickUsesCookingFuelComponent(Env env) {
+        var instance = env.createFlatInstance();
+        var connection = env.createConnection();
+        var player = connection.connect(instance, new Pos(0, 42, 0));
+        var furnace = new Inventory(InventoryType.FURNACE, "Furnace");
+
+        var nonFuel = ItemStack.of(Material.DIAMOND, 4);
+        furnace.setItemStack(1, nonFuel);
+        assertFalse(furnace.shiftClick(player, 1, 0));
+        assertEquals(nonFuel, furnace.getItemStack(1));
+
+        var fuel = ItemStack.of(Material.COAL, 4);
+        furnace.setItemStack(1, fuel);
+        assertTrue(furnace.shiftClick(player, 1, 0));
+        assertEquals(ItemStack.AIR, furnace.getItemStack(1));
+        assertEquals(fuel, player.getInventory().getItemStack(8));
     }
 }

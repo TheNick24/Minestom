@@ -1,6 +1,7 @@
 package net.minestom.server.inventory;
 
 import net.kyori.adventure.text.Component;
+import net.minestom.server.component.DataComponents;
 import net.minestom.server.entity.Player;
 import net.minestom.server.inventory.click.ClickType;
 import net.minestom.server.inventory.click.InventoryClickResult;
@@ -198,10 +199,23 @@ public non-sealed class Inventory extends AbstractInventory {
         final ItemStack clicked = isInWindow ? getItemStack(slot) : playerInventory.getItemStack(clickSlot);
         final ItemStack cursor = playerInventory.getCursorItem(); // Isn't used in the algorithm
 
+        final InventoryType type = this.getInventoryType();
+        final boolean isFurnaceLike = type == InventoryType.FURNACE
+                || type == InventoryType.BLAST_FURNACE
+                || type == InventoryType.SMOKER;
+
         InventoryClickResult clickResult;
         if (isInWindow) {
-            // The player shift-clicked an item in this GUI into their inventory.
-            // Prioritize the hotbar (8->0), then their regular inventory (35->9).
+            if (isFurnaceLike && clickSlot >= 0 && clickSlot < this.getSize()) {
+                final ItemStack item = this.getItemStack(clickSlot);
+                if (!item.isAir()) {
+                    if (clickSlot == 1 && !isFuel(item)) {
+                        updateAll(player);
+                        return false;
+                    }
+                }
+            }
+
             clickResult = clickProcessor.shiftClick(
                     this, playerInventory,
                     8, -1, -1,
@@ -214,9 +228,17 @@ public non-sealed class Inventory extends AbstractInventory {
                         player, clickSlot, clicked, cursor);
             }
         } else {
+            int start = 0;
+            int end = getInnerSize();
+            final int step = 1;
+
+            if (isFurnaceLike) {
+                end = 2;
+            }
+
             clickResult = clickProcessor.shiftClick(
                     playerInventory, this,
-                    0, getInnerSize(), 1,
+                    start, end, step,
                     player, clickSlot, clicked, cursor);
         }
 
@@ -335,5 +357,10 @@ public non-sealed class Inventory extends AbstractInventory {
     private void updateAll(Player player) {
         player.getInventory().update();
         update(player);
+    }
+
+    private static boolean isFuel(ItemStack stack) {
+        if (stack.isAir()) return false;
+        return stack.get(DataComponents.COOKING_FUEL) != null;
     }
 }
