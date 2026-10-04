@@ -367,7 +367,7 @@ public class InventoryIntegrationTest {
     }
 
     @Test
-    public void furnaceFuelSlotShiftClickUsesFurnaceFuelTag(Env env) {
+    public void furnaceFuelSlotShiftClickUsesCookingFuelComponent(Env env) {
         var instance = env.createFlatInstance();
         var connection = env.createConnection();
         var player = connection.connect(instance, new Pos(0, 42, 0));

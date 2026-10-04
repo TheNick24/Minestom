@@ -1,15 +1,13 @@
 package net.minestom.server.inventory;
 
 import net.kyori.adventure.text.Component;
+import net.minestom.server.component.DataComponents;
 import net.minestom.server.entity.Player;
 import net.minestom.server.inventory.click.ClickType;
 import net.minestom.server.inventory.click.InventoryClickResult;
 import net.minestom.server.item.ItemStack;
-import net.minestom.server.item.Material;
 import net.minestom.server.network.packet.server.play.OpenWindowPacket;
 import net.minestom.server.network.packet.server.play.WindowPropertyPacket;
-import net.minestom.server.registry.RegistryTag;
-import net.minestom.server.registry.TagKey;
 import net.minestom.server.utils.inventory.PlayerInventoryUtils;
 
 import java.util.List;
@@ -363,8 +361,6 @@ public non-sealed class Inventory extends AbstractInventory {
 
     private static boolean isFuel(ItemStack stack) {
         if (stack.isAir()) return false;
-        final RegistryTag<Material> furnaceFuels = Material.staticRegistry()
-                .getTag(TagKey.ofHash("#minecraft:furnace_fuels"));
-        return furnaceFuels != null && furnaceFuels.contains(stack.material().registryKey());
+        return stack.get(DataComponents.COOKING_FUEL) != null;
     }
 }
